@@ -238,5 +238,42 @@ docker compose up -d --remove-orphans # Recreates containers with new images
 ```
 
 
+## V. Troubleshooting
+
+* **Permission Denied for Volumes:** Ensure PUID and PGID in .env are correctly set to your non-root user's UID/GID on the VPS.
+* **Caddy SSL Issues / Site Not Accessible:**
+  * Check Caddy logs: docker compose logs -f caddy.
+  * Verify DNS records are correctly pointing to your VPS IP and have propagated.
+  * Ensure ports 80 and 443 are open in your VPS firewall (sudo ufw status).
+* **Service Not Starting:** Check individual service logs: docker compose logs -f <service_name>.
+* **OpenWebUI "No Models Available" or "Error Fetching Models":**
+  1. Ensure LiteLLM is running: docker compose ps.
+  2. Check LiteLLM logs: docker compose logs -f litellm. Look for errors related to model loading or API key issues.
+  3. Verify models are correctly configured with their API keys in the LiteLLM Admin UI (https://<YOUR_LITELLM_DOMAIN>/ui).
+  4. Ensure OpenWebUI's OPENAI_API_BASE_URL in docker-compose.yml correctly points to http://litellm:4000/v1.
+  5. Test LiteLLM directly:
+    * From your local machine (if LiteLLM domain is public):
+ 
+      ```
+      curl https://<YOUR_LITELLM_DOMAIN>/v1/models -H "Authorization: Bearer <YOUR_LITELLM_MASTER_KEY_OR_A_MODEL_API_KEY>"
+      ```
+      * Or from within another container on the VPS (e.g., by exec-ing into n8n):
+     ```
+      docker compose exec n8n curl http://litellm:4000/health
+      docker compose exec n8n curl http://litellm:4000/v1/models
+     ```
+
+* **LiteLLM Admin UI Not Saving Changes:**
+  * Ensure the volume mount for litellm_config.yaml in docker-compose.yml is rw (read-write): - ./litellm_config.yaml:/app/config.yaml:rw.
+  * Check file permissions of litellm_config.yaml on the host. The Docker container (running as root by default, unless LiteLLM image specifies a user) needs to be able to write to it. chmod 664 litellm_config.yaml might be needed if issues persist. Generally, Docker handles this if the host path is writable by the user running docker compose up.
 
 
+## VI. Further Customization
+
+* **Adding Local LLMs (e.g., Ollama):**
+  * Add an Ollama service to docker-compose.yml.
+  * Expose Ollama's port to the ai_stack_network.
+  * In litellm_config.yaml (or via LiteLLM UI), add models pointing to Ollama (e.g., api_base: http://ollama:11434).
+  * Consider GPU passthrough if your VPS has a GPU and you install NVIDIA Docker Toolkit.
+* **Qdrant Integration:**
+  * Your applications (n8n, custom scripts, or future RAG components in OpenWebUI/LiteLLM) can connect to Qdrant using http://qdrant:6333 (HTTP) or qdrant:6334 (gRPC) from within the Docker network.
