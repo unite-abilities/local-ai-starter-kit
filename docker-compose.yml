@@ -1,0 +1,164 @@
+version: '3.8'
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: caddy_server
+    restart: unless-stopped
+    ports:
+      - "80:80"    # For HTTP and ACME challenges
+      - "443:443"  # For HTTPS
+      - "443:443/udp" # For HTTP/3
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data # Persists Caddy's state including ACME certs
+      - caddy_config:/config
+    environment:
+      - CADDY_ADMIN_EMAIL=${CADDY_ADMIN_EMAIL}
+      - N8N_DOMAIN=${N8N_DOMAIN}
+      - OPENWEBUI_DOMAIN=${OPENWEBUI_DOMAIN}
+      - LITELLM_DOMAIN=${LITELLM_DOMAIN}
+      - QDRANT_DOMAIN=${QDRANT_DOMAIN} # Used if Qdrant block in Caddyfile is uncommented
+      - TZ=${TZ}
+    networks:
+      - ai_stack_network
+    depends_on:
+      - n8n
+      - open-webui
+      - litellm
+      # - qdrant # Add if exposing Qdrant via Caddy
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: postgres_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB} # n8n will use this DB by default
+      TZ: ${TZ}
+      # PUID/PGID usually not critical for official postgres image data dir
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d:ro # Scripts in here run on init
+    networks:
+      - ai_stack_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  n8n:
+    image: n8nio/n8n:latest
+    container_name: n8n_app
+    restart: unless-stopped
+    ports: # Only exposed to Caddy via Docker network, not directly to host
+      - "127.0.0.1:5678:5678"
+    environment:
+      N8N_HOST: "${N8N_DOMAIN}"
+      N8N_PORT: 5678
+      N8N_PROTOCOL: "https"
+      WEBHOOK_URL: "https://${N8N_DOMAIN}/" # n8n needs its public URL
+      N8N_ENCRYPTION_KEY: "${N8N_ENCRYPTION_KEY}"
+      N8N_BASIC_AUTH_ACTIVE: ${N8N_BASIC_AUTH_USER:+"true"} # Active if N8N_BASIC_AUTH_USER is set
+      N8N_BASIC_AUTH_USER: ${N8N_BASIC_AUTH_USER}
+      N8N_BASIC_AUTH_PASSWORD: ${N8N_BASIC_AUTH_PASSWORD}
+      GENERIC_TIMEZONE: "${TZ}"
+      PUID: ${PUID}
+      PGID: ${PGID}
+      # PostgreSQL Connection for n8n
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres # Service name of the postgres container
+      DB_POSTGRESDB_PORT: 5432
+      DB_POSTGRESDB_DATABASE: ${POSTGRES_DB} # Uses the main DB defined for postgres
+      DB_POSTGRESDB_USER: ${POSTGRES_USER}
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_POSTGRESDB_SSL: "false" # Internal network, SSL not strictly needed
+    volumes:
+      - n8n_data:/home/node/.n8n # Persists n8n workflows and data
+    networks:
+      - ai_stack_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main # Or a specific tag like :ollama for Ollama-focused version
+    container_name: open_webui_app
+    restart: unless-stopped
+    ports: # Only exposed to Caddy
+      - "127.0.0.1:3030:8080" # Internal 8080 mapped to a different loopback port to avoid conflict
+    environment:
+      PUID: ${PUID}
+      PGID: ${PGID}
+      TZ: ${TZ}
+      # Connect to LiteLLM as the LLM backend
+      OPENAI_API_BASE_URL: "http://litellm:4000/v1" # LiteLLM service, /v1 for OpenAI client compatibility
+      OPENAI_API_KEY: "litellm_will_handle_keys" # Dummy key, actual keys managed by LiteLLM
+      # Configure OpenWebUI to use PostgreSQL
+      ENABLE_DB_RESET: "false" # Default is false, set to true to allow DB reset from UI (use with caution)
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${OPENWEBUI_DB_NAME}?sslmode=disable"
+    volumes:
+      - openwebui_data:/app/backend/data # Persists OpenWebUI data
+    networks:
+      - ai_stack_network
+    depends_on:
+      - postgres
+      - litellm
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest # Consider a specific version tag for stability, e.g. v1.20.8
+    container_name: litellm_proxy
+    restart: unless-stopped
+    env_file:
+      - .env # Makes all .env variables available to LiteLLM (e.g., for LITELLM_MASTER_KEY)
+    ports: # Only exposed to Caddy
+      - "127.0.0.1:4000:4000"
+    # To use GPUs with LiteLLM for local models (e.g., via Ollama managed by LiteLLM or Transformers library):
+    # This requires NVIDIA Container Toolkit on the host.
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1 # or "all"
+    #           capabilities: [gpu]
+    volumes:
+      # Mount the config file as read-write so UI changes can be persisted to the host file
+      - ./litellm_config.yaml:/app/config.yaml:rw
+      - litellm_data:/app/data # For any persistent data LiteLLM might store (logs, local db if configured)
+    # Command to start LiteLLM proxy using the config file.
+    # The UI is enabled by default when a master_key is set.
+    command: ["--config", "/app/config.yaml", "--host", "0.0.0.0", "--port", "4000"]
+    networks:
+      - ai_stack_network
+    depends_on:
+      - qdrant # If litellm_config.yaml refers to qdrant (e.g., for embeddings or semantic cache)
+
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: qdrant_db
+    restart: unless-stopped
+    ports: # Expose Qdrant's HTTP and gRPC ports (Caddy can proxy HTTP)
+      - "127.0.0.1:6333:6333" # HTTP REST API & Web UI
+      - "127.0.0.1:6334:6334" # gRPC API
+    # environment: # If you set QDRANT_API_KEY in .env and want to use it for Qdrant's own auth
+    #   QDRANT__SERVICE__API_KEY: ${QDRANT_API_KEY}
+    volumes:
+      - qdrant_data:/qdrant/storage # Persists Qdrant data
+    networks:
+      - ai_stack_network
+
+volumes:
+  caddy_data:
+  caddy_config:
+  postgres_data:
+  n8n_data:
+  openwebui_data:
+  litellm_data:
+  qdrant_data:
+
+networks:
+  ai_stack_network:
+    driver: bridge
