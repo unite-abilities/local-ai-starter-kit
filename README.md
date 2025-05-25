@@ -215,7 +215,7 @@ docker compose logs -f <service_name>
 # e.g., docker compose logs -f litellm
 ```
 
-**- Stop All Services:**
+**+ Stop All Services:**
 ```
 docker compose down
 ```
