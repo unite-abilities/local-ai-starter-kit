@@ -209,29 +209,29 @@ LiteLLM is your central gateway to various LLM providers. Configure it via its A
 ```
 docker compose logs -f
 ```
-*** View Logs for a Specific Service:**
+** - View Logs for a Specific Service:**
 ```
 docker compose logs -f <service_name> 
 # e.g., docker compose logs -f litellm
 ```
 
-*** Stop All Services:**
+** * Stop All Services:**
 ```
 docker compose down
 ```
 
-*** Stop and Remove Volumes (WARNING: Deletes all data like databases, n8n workflows, etc.):**
+** * Stop and Remove Volumes (WARNING: Deletes all data like databases, n8n workflows, etc.):**
 ```
 docker compose down -v
 ```
 
-*** Restart Services:**
+** * Restart Services:**
 ```
 docker compose restart <service_name> # Restart specific service
 docker compose restart # Restart all services
 ```
 
-*** Update Services (Pull newer Docker images and recreate containers):**
+** * Update Services (Pull newer Docker images and recreate containers):**
 ```
 docker compose pull # Pulls the latest images defined in docker-compose.yml
 docker compose up -d --remove-orphans # Recreates containers with new images
