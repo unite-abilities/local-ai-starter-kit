@@ -49,35 +49,41 @@ This guide assumes you're starting with a new Hostinger VPS.
 
 From now on, perform all commands as yourusername, using sudo when necessary.
 
-##4. Update Your System:
+**4. Update Your System:
 
 ```sudo apt update && sudo apt upgrade -y```
 
-5. Install Docker and Docker Compose:
+**5. Install Docker and Docker Compose:
 
 * Install Docker
 
-```sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+```
+sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
 curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 sudo apt update
 sudo apt install -y docker-ce docker-ce-cli containerd.io
 sudo systemctl start docker
-sudo systemctl enable docker```
+sudo systemctl enable docker
+```
 
 * Add your user to the docker group (to run Docker commands without sudo):
 
-``` sudo usermod -aG docker ${USER}
+```
+sudo usermod -aG docker ${USER}
 # You need to log out and log back in for this change to take effect.
 # Alternatively, you can use 'newgrp docker' in your current session.
-newgrp docker ```
+newgrp docker
+```
 
 Verify by running docker ps (it should not give a permission error).
 
 * Install Docker Compose (v2):
-``` sudo apt install -y docker-compose-plugin
+```
+sudo apt install -y docker-compose-plugin
 # Verify installation
-docker compose version ```
+docker compose version
+```
 
 (Note: some older systems might use docker-compose (with a hyphen). This setup uses docker compose (space), which is Docker Compose V2, integrated as a Docker plugin.)
 
