@@ -36,13 +36,15 @@ This guide assumes you're starting with a new Hostinger VPS.
    *   You'll be prompted for the root password.
 
 **3. Create a Non-Root User (Security Best Practice):**
-   ```bash
+```
+   bash
    # Replace 'yourusername' with your desired username
    adduser yourusername
    usermod -aG sudo yourusername
    # Log out of root and log back in as the new user
    exit
-   ssh yourusername@YOUR_SERVER_IP```
+   ssh yourusername@YOUR_SERVER_IP
+```
 
 
 From now on, perform all commands as yourusername, using sudo when necessary.
