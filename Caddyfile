@@ -1,0 +1,29 @@
+# Global options
+{
+    email {$CADDY_ADMIN_EMAIL}
+    # acme_dns cloudflare your-cloudflare-api-token # Uncomment and configure if using DNS challenge for SSL
+}
+
+# n8n
+{$N8N_DOMAIN} {
+    reverse_proxy n8n:5678
+}
+
+# OpenWebUI
+{$OPENWEBUI_DOMAIN} {
+    reverse_proxy open-webui:8080 # Default internal port for OpenWebUI Docker image
+    # Required for Server-Sent Events (SSE) and WebSockets to work correctly
+    header Connection *Upgrade
+    header Upgrade *websocket
+}
+
+# LiteLLM (Proxy and Admin UI)
+{$LITELLM_DOMAIN} {
+    reverse_proxy litellm:4000
+}
+
+# Qdrant (Optional: Expose Qdrant's HTTP API/UI if needed)
+# Qdrant UI is usually on port 6333/dashboard
+# {$QDRANT_DOMAIN} {
+#     reverse_proxy qdrant:6333
+# }
