@@ -1,6 +1,6 @@
-# Hostinger AI Stack: Self-Hosted LLM & Automation Platform
+# AI Stack: Self-Hosted LLM & Automation Platform
 
-This repository provides a Docker Compose setup to quickly deploy a powerful, self-hosted AI and automation stack on a Hostinger VPS (or any Linux server). It's designed for flexibility, especially for professional service offerings where clients manage their own LLM API keys.
+This repository provides a Docker Compose setup to quickly deploy a powerful, self-hosted AI and automation stack on a VPS (or any Linux server). It's designed for flexibility, especially for professional service offerings where clients manage their own LLM API keys.
 
 **Core Applications:**
 
@@ -43,3 +43,10 @@ This guide assumes you're starting with a new Hostinger VPS.
    # Log out of root and log back in as the new user
    exit
    ssh yourusername@YOUR_SERVER_IP
+
+
+From now on, perform all commands as yourusername, using sudo when necessary.
+
+##4. Update Your System:
+
+```sudo apt update && sudo apt upgrade -y```
