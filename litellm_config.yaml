@@ -1,0 +1,65 @@
+# litellm_config.yaml
+
+# This list defines model "templates" or "slots" that will appear in LiteLLM.
+# API keys and other sensitive/customer-specific details for these models
+# MUST be added or managed via the LiteLLM Admin UI after deployment.
+# The Admin UI is typically accessible at https://<YOUR_LITELLM_DOMAIN>/ui
+# and requires the LITELLM_MASTER_KEY from your .env file to make changes.
+#
+# Changes made in the UI will be saved back to this file on the host.
+
+model_list:
+  - model_name: gpt-3.5-turbo-default # User-facing name for this model slot in LiteLLM & OpenWebUI
+    litellm_params:
+      model: openai/gpt-3.5-turbo # Actual model identifier LiteLLM uses for OpenAI's gpt-3.5-turbo
+      # API key (e.g., api_key: "sk-...") for this model will be configured via the LiteLLM Admin UI.
+
+  - model_name: gpt-4-default
+    litellm_params:
+      model: openai/gpt-4
+      # API key for this model will be configured via the LiteLLM Admin UI.
+
+  # Add other model templates as needed for different providers or configurations:
+  # - model_name: claude-3-opus-default
+  #   litellm_params:
+  #     model: anthropic/claude-3-opus-20240229
+  #     # API key will be configured via the LiteLLM Admin UI.
+
+  # - model_name: gemini-pro-default
+  #   litellm_params:
+  #     model: gemini/gemini-pro
+  #     # API key will be configured via the LiteLLM Admin UI.
+
+  # Example for a local Ollama model (if you add an Ollama service to docker-compose.yml)
+  # This template helps if you often set up Ollama. The actual model name from Ollama can be specified later.
+  # - model_name: ollama-custom-model
+  #   litellm_params:
+  #     model: ollama/mistral # Replace 'mistral' with the actual model name in Ollama (e.g., ollama/llama2)
+  #     api_base: http://ollama:11434 # Assumes Ollama service is named 'ollama' in docker-compose
+
+# LiteLLM specific settings
+litellm_settings:
+  set_verbose: False # Set to True for more detailed logs during troubleshooting (via .env or UI)
+  # Telemetry helps LiteLLM improve. Set to False to disable if preferred.
+  # See https://docs.litellm.ai/docs/proxy/product_analytics for details.
+  telemetry: True # Consider discussing with customers or setting to False by default.
+  # alert_email_address: admin@example.com # (Optional) Email for alerts, requires SMTP setup.
+
+# General settings are crucial for security and basic operation
+general_settings:
+  master_key: env/LITELLM_MASTER_KEY # REQUIRED: Enables Admin UI & protected /config/* endpoints.
+                                     # This pulls LITELLM_MASTER_KEY from the .env file.
+
+# Router settings (optional features)
+# router_settings:
+  # Example: If you want to enable caching for LiteLLM (requires a Redis service in docker-compose.yml)
+  # cache_responses: True
+  # redis_url: "redis://redis_cache:6379" # Ensure 'redis_cache' service exists
+
+# Embedding settings (optional features)
+# embedding_settings:
+#   # Example: If using LiteLLM's semantic cache with Qdrant, or proxying embedding models to Qdrant
+#   qdrant_config:
+#     host: qdrant # Docker service name for Qdrant
+#     port: 6333   # Qdrant HTTP port
+#     # api_key: env/QDRANT_API_KEY # if you set an API key for Qdrant in .env
