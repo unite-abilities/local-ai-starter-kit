@@ -23,12 +23,12 @@ This repository provides a Docker Compose setup to quickly deploy a powerful, se
 
 This guide assumes you're starting with a new Hostinger VPS.
 
-**1. Choose a Hostinger VPS Plan:**
+**1. Choose a VPS Plan:**
    *   A plan with at least 2 vCPU, 2GB RAM, and 40GB NVMe SSD should be a good starting point for this stack without running large local LLMs. If you plan to use local models (e.g., via Ollama), you'll need significantly more RAM and potentially GPU resources.
-   *   **Operating System:** Choose **Ubuntu 22.04 LTS (or the latest LTS)**. Starting with a minimal/blank OS installation is recommended for better control, though Hostinger might offer a "Docker pre-installed" option which can save a step if you prefer. This guide will cover manual Docker installation.
+   *   **Operating System:** Choose **Ubuntu 22.04 LTS (or the latest LTS)**. Starting with a minimal/blank OS installation is recommended for better control, though your VPS provider might offer a "Docker pre-installed" option which can save a step if you prefer. This guide will cover manual Docker installation.
 
 **2. Initial Server Setup (Connecting via SSH):**
-   *   Once your VPS is provisioned, find its IP address and root password from the Hostinger panel.
+   *   Once your VPS is provisioned, find its IP address and root password from the VPS panel.
    *   Connect to your server via SSH:
      ```bash
      ssh root@YOUR_SERVER_IP
@@ -42,7 +42,7 @@ This guide assumes you're starting with a new Hostinger VPS.
    usermod -aG sudo yourusername
    # Log out of root and log back in as the new user
    exit
-   ssh yourusername@YOUR_SERVER_IP
+   ssh yourusername@YOUR_SERVER_IP```
 
 
 From now on, perform all commands as yourusername, using sudo when necessary.
@@ -50,3 +50,40 @@ From now on, perform all commands as yourusername, using sudo when necessary.
 ##4. Update Your System:
 
 ```sudo apt update && sudo apt upgrade -y```
+
+5. Install Docker and Docker Compose:
+
+* Install Docker
+
+```sudo apt install -y apt-transport-https ca-certificates curl software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install -y docker-ce docker-ce-cli containerd.io
+sudo systemctl start docker
+sudo systemctl enable docker```
+
+* Add your user to the docker group (to run Docker commands without sudo):
+
+``` sudo usermod -aG docker ${USER}
+# You need to log out and log back in for this change to take effect.
+# Alternatively, you can use 'newgrp docker' in your current session.
+newgrp docker ```
+
+Verify by running docker ps (it should not give a permission error).
+
+* Install Docker Compose (v2):
+``` sudo apt install -y docker-compose-plugin
+# Verify installation
+docker compose version ```
+
+(Note: some older systems might use docker-compose (with a hyphen). This setup uses docker compose (space), which is Docker Compose V2, integrated as a Docker plugin.)
+
+
+
+
+
+
+
+
+
