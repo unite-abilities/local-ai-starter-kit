@@ -37,13 +37,17 @@ This guide assumes you're starting with a new VPS.
 
 **3. Create a Non-Root User (Security Best Practice):**
 ```
-   bash
    # Replace 'yourusername' with your desired username
    adduser yourusername
+```
+```
    usermod -aG sudo yourusername
    # Log out of root and log back in as the new user
    exit
-   ssh yourusername@YOUR_SERVER_IP
+```
+You can switch users by using 
+```
+su - sked-admin
 ```
 
 From now on, perform all commands as yourusername, using sudo when necessary.
