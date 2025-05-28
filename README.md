@@ -47,7 +47,7 @@ This guide assumes you're starting with a new VPS.
 ```
 You can switch users by using 
 ```
-su - sked-admin
+su - yourusername
 ```
 
 From now on, perform all commands as yourusername, using sudo when necessary.
